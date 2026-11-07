@@ -1,0 +1,82 @@
+generator client { provider = "prisma-client-js" }
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+model User {
+  id Int @id @default(autoincrement())
+  username String @unique
+  email String @unique
+  password String
+  role String @default("USER")
+  bio String @default("")
+  xp Int @default(0)
+  attempts QuizAttempt[]
+  achievements UserAchievement[]
+}
+model Category {
+  id Int @id @default(autoincrement())
+  name String @unique
+  quizzes Quiz[]
+}
+model Quiz {
+  id Int @id @default(autoincrement())
+  title String
+  difficulty String
+  timeLimit Int @default(300)
+  categoryId Int
+  category Category @relation(fields:[categoryId], references:[id], onDelete: Cascade)
+  questions Question[]
+  attempts QuizAttempt[]
+}
+model Question {
+  id Int @id @default(autoincrement())
+  text String
+  quizId Int
+  quiz Quiz @relation(fields:[quizId], references:[id], onDelete: Cascade)
+  options AnswerOption[]
+}
+model AnswerOption {
+  id Int @id @default(autoincrement())
+  text String
+  isCorrect Boolean @default(false)
+  questionId Int
+  question Question @relation(fields:[questionId], references:[id], onDelete: Cascade)
+}
+model QuizAttempt {
+  id Int @id @default(autoincrement())
+  userId Int
+  quizId Int
+  status String @default("IN_PROGRESS")
+  startedAt DateTime @default(now())
+  completedAt DateTime?
+  score Int @default(0)
+  xpEarned Int @default(0)
+  user User @relation(fields:[userId], references:[id])
+  quiz Quiz @relation(fields:[quizId], references:[id])
+  answers UserAnswer[]
+}
+model UserAnswer {
+  id Int @id @default(autoincrement())
+  attemptId Int
+  questionId Int
+  optionId Int
+  isCorrect Boolean
+  attempt QuizAttempt @relation(fields:[attemptId], references:[id], onDelete: Cascade)
+  @@unique([attemptId, questionId])
+}
+model Achievement {
+  id Int @id @default(autoincrement())
+  key String @unique
+  name String
+  description String
+  users UserAchievement[]
+}
+model UserAchievement {
+  userId Int
+  achievementId Int
+  unlockedAt DateTime @default(now())
+  user User @relation(fields:[userId], references:[id])
+  achievement Achievement @relation(fields:[achievementId], references:[id])
+  @@id([userId, achievementId])
+}

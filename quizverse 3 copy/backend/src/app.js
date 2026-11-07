@@ -1,0 +1,20 @@
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import cookieParser from "cookie-parser";
+import rateLimit from "express-rate-limit";
+import routes from "./routes.js";
+const app = express();
+app.set("trust proxy", 1);
+app.use(helmet());
+app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
+app.use(express.json());
+app.use(cookieParser());
+app.use("/api/auth", rateLimit({ windowMs: 15*60*1000, max: 50 }));
+app.get("/health", (_, res) => res.json({ ok: true }));
+app.use("/api", routes);
+app.use((err, req, res, next) => {
+  if (err.name === "ZodError") return res.status(400).json({ error: err.issues[0].message });
+  console.error(err); res.status(500).json({ error: "Server error" });
+});
+export default app;
